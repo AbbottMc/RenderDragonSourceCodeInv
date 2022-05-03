@@ -1,0 +1,147 @@
+//for Actor ActorTint ActorMultiTexture ActorGlint Entity
+//Entity.Fragment
+
+//#define EMISSIVE
+//#define EMISSIVE_ONLY
+//#define CHANGE_COLOR
+//#define CHANGE_COLOR_MULTI
+//#define MASKED_MULTITEXTURE
+//#define ALPHA_TEST
+//#define COLOR_SECOND_TEXTURE
+
+//#define GLINT
+//#define TINT
+//#define MULTITEXTURE
+
+varying highp vec4 v_color0;
+varying highp vec4 v_fog;
+varying highp vec4 v_layerUv;
+varying highp vec4 v_light;
+varying highp vec2 v_texcoord0;
+uniform highp vec4 UseAlphaRewrite;
+uniform highp vec4 ChangeColor;
+uniform highp vec4 OverlayColor;
+uniform highp vec4 TintedAlphaTestEnabled;
+uniform highp vec4 ColorBased;
+uniform highp vec4 MatColor;
+uniform highp vec4 MultiplicativeTintColor;
+uniform highp vec4 TileLightColor;
+uniform highp vec4 GlintColor;
+uniform sampler2D s_MatTexture;
+uniform sampler2D s_MatTexture1;
+uniform sampler2D s_MatTexture2;
+
+highp vec4 glintBlend(highp vec4 dest, highp vec4 source) {
+	// glBlendFuncSeparate(GL_SRC_COLOR, GL_ONE, GL_ONE, GL_ZERO)
+    return vec4(source.rgb * source.rgb, abs(source.a)) + vec4(dest.rgb, 0.0);
+}
+
+#ifdef EMISSIVE
+    #ifdef EMISSIVE_ONLY
+        #define NEEDS_DISCARD(C) (C.a < 0.00390625 || C.a > 0.9960938 )
+    #else
+        #define NEEDS_DISCARD(C) (dot (C,vec4(1.0, 1.0, 1.0, 1.0)) < 0.00390625)
+    #endif
+#else
+    #if defined(CHANGE_COLOR)||defined(CHANGE_COLOR_MULTI)
+        #define NEEDS_DISCARD(C) (C.a < 0.5)
+    #else
+        #define NEEDS_DISCARD(C) (C.a < 0.00390625)
+    #endif
+#endif
+
+void main() {
+    highp vec4 color;
+
+    color = MatColor * texture2D(s_MatTexture, v_texcoord0);
+
+#ifdef MASKED_MULTITEXTURE
+    highp vec4 markings = texture2D(s_MatTexture1, v_texcoord0);
+
+	// If markings has a non-black color and no alpha, use color; otherwise use markings 
+    highp float maskedTexture = float(dot(markings.rgb, vec3(1.0, 1.0, 1.0)) * (1.0 - markings.a) > 0.0);
+    color = mix(markings, color, maskedTexture);
+#endif // MASKED_MULTITEXTURE
+
+#if defined(ALPHA_TEST) && !defined(MULTITEXTURE) && !defined(TINT)
+    highp vec4 color_cmp;
+    color_cmp.rgb = color.rgb;
+    color_cmp.a = mix(color.a, (color.a * OverlayColor.a), TintedAlphaTestEnabled.r);
+    if(NEEDS_DISCARD(color_cmp))
+        discard;
+#endif // ALPHA_TEST
+
+#ifdef CHANGE_COLOR_MULTI
+	// Texture is a mask for tinting with two colors
+    highp vec2 colorMask = color.rg;
+
+	// Apply the base color tint
+    color.rgb = colorMask.rrr * ChangeColor.rgb;
+
+	// Apply the secondary color mask and tint so long as its grayscale value is not 0
+    color.rgb = mix(color.rgb, colorMask.ggg * MultiplicativeTintColor.rgb, ceil(colorMask.g));
+#else
+
+#ifdef CHANGE_COLOR
+    color.rgb = mix(color.rgb, color.rgb * ChangeColor.rgb, color.a);
+    color.a *= ChangeColor.a;
+#endif
+
+#endif// CHANGE_COLOR_MULTI
+
+#ifdef MULTITEXTURE
+    highp vec4 tex1 = texture2D(s_MatTexture1, v_texcoord0);
+    highp vec4 armor = texture2D(s_MatTexture2, v_texcoord0);
+    color.rgb = mix(color.rgb, tex1.rgb, tex1.a);
+
+#ifdef COLOR_SECOND_TEXTURE
+    if(armor.a > 0.0) {
+        color.rgb =mix(armor.rgb, armor.rgb * ChangeColor.rgb, armor.a)
+    }
+#else
+    color.rgb = mix(color.rgb, armor.rgb, armor.a);
+#endif
+#ifdef ALPHA_TEST
+    if(color.a < 0.5 && tex1.a < 0.00390625) {
+        discard;
+    }
+#endif
+#endif// MULTITEXTURE
+
+#ifdef TINT
+    highp vec4 tintTex = texture2D(s_MatTexture1, v_texcoord0);
+    tintTex.rgb = tintTex.rgb * MultiplicativeTintColor.rgb;
+
+#ifdef ALPHA_TEST
+    color.rgb = mix(color.rgb, tintTex.rgb, tintTex.a);
+    if(color.a + tintTex.a < 0.00390625) {
+        discard;
+    }
+#endif
+#endif// TINT
+
+#ifdef ALPHA_TEST
+    color.a = max(UseAlphaRewrite.r, color.a);
+#endif
+    color.rgb = color.rgb * mix(vec3(1.0, 1.0, 1.0), v_color0.rgb, ColorBased.r);
+    color.rgb = mix(color.rgb, OverlayColor.rgb, OverlayColor.a);
+
+#if defined(EMISSIVE)||defined(EMISSIVE_ONLY)
+	//make glowy stuff
+    color.rgb *= mix(vec3(1.0, 1.0, 1.0), v_light.rgb, color.a);
+#else
+    color.rgb *= v_light.rgb;
+#endif
+
+	//apply fog
+    color.rgb = mix(color.rgb, v_fog.rgb, v_fog.a);
+
+#ifdef GLINT
+	// Applies color mask to glint texture instead and blends with original color
+    highp vec4 layer1 = texture2D(s_MatTexture1, fract(v_layerUv.xy)).rgbr * GlintColor;
+    highp vec4 layer2 = texture2D(s_MatTexture1, fract(v_layerUv.zw)).rgbr * GlintColor;
+    highp vec4 glint = (layer1 + layer2) * TileLightColor;
+    color = glintBlend(color, glint);
+#endif
+    gl_FragColor = color;
+}

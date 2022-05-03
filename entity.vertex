@@ -1,0 +1,142 @@
+//for Actor ActorTint ActorMultiTexture ActorGlint Entity BeaconBeam
+//Entity.vertex
+
+//#define SKINNING
+//#define INSTANCING
+//#define TRANSPARENT
+//#define ALPHA_TEST
+//#define GLINT
+//#define FANCY
+//#define DEPTH_ONLY
+//#define ENTITY
+//#define BEACON_BEAM
+
+attribute highp vec4 a_color0;
+attribute highp float a_indices;
+attribute highp vec4 a_normal;
+attribute highp vec3 a_position;
+attribute highp vec2 a_texcoord0;
+attribute highp vec4 i_data0;
+attribute highp vec4 i_data1;
+attribute highp vec4 i_data2;
+attribute highp vec4 i_data3;
+varying highp vec4 v_color0;
+varying highp vec4 v_fog;
+varying highp vec4 v_layerUv;
+varying highp vec4 v_light;
+varying highp vec2 v_texcoord0;
+varying highp vec4 v_texcoords;
+uniform highp vec4 FogControl;
+uniform highp mat4 u_viewProj;
+uniform highp mat4 u_modelViewProj;
+uniform highp vec4 OverlayColor;
+uniform mat4 u_model[4];
+uniform mat4 Bones[8];
+uniform highp vec4 UVAnimation;
+uniform highp vec4 FogColor;
+uniform highp vec4 TileLightColor;
+uniform highp vec4 UVScale;
+uniform vec4 BannerColors[7];
+uniform vec4 BannerUVOffsetsAndScales[7];
+
+#define AMBIENT (0.45)
+
+#define XFAC (-0.1)
+#define ZFAC (0.1)
+
+highp float lightIntensity(highp vec4 normal) {
+#ifdef FANCY
+    highp vec3 N = normalize(u_model[0] * normal).xyz;
+    N.y *= TileLightColor.w;
+    highp float yLight = (1.0 + N.y) * 0.5;
+    return yLight * (1.0 - AMBIENT) + N.x * N.x * XFAC + N.z * N.z * ZFAC + AMBIENT;
+#else
+    return 1.0;
+#endif
+}
+
+#ifdef GLINT
+highp vec2 calculateLayerUV(highp float offset, highp float rotation) {
+    highp vec2 uv = a_texcoord0;
+    uv -= 0.5;
+    highp float rsin = sin(rotation);
+    highp float rcos = cos(rotation);
+    uv = mat2(rcos, -rsin, rsin, rcos) * uv;
+    uv.x += offset;
+    uv += 0.5;
+
+    return uv * UVScale;
+}
+#endif
+
+void main() {
+    highp vec4 entitySpacePosition;
+    highp vec4 position;
+    #ifndef ENTITY
+        #ifndef BEACON_BEAM
+            highp mat4 World;
+            #ifdef INSTANCING
+                World[0] = i_data0;
+                World[1] = i_data1;
+                World[2] = i_data2;
+                World[3] = i_data3;
+            #else
+                World = u_model[0];
+                #ifdef SKINNING
+                    World = World * Bones[int(a_indices)];
+                #endif
+            #endif
+            entitySpacePosition = World * vec4(a_position, 1.0);
+            position = u_viewProj * entitySpacePosition;
+        #else
+            position = u_modelViewProj * vec4(a_position, 1.0);
+        #endif
+    #else
+        position = u_modelViewProj * Bones[int(a_indices)] * vec4(a_position, 1.0);
+    #endif
+
+    highp float L = lightIntensity(a_normal);
+
+    L += OverlayColor.a * 0.35;
+
+    highp vec4 light = vec4(vec3(L) * TileLightColor.xyz, 1.0);
+
+    highp vec4 fogColor;
+    fogColor.rgb = FogColor.rgb;
+    fogColor.a = clamp(((position.z / FogControl.z) - FogControl.x) / (FogControl.y - FogControl.x), 0.0, 1.0);
+
+    #if defined(DEPTH_ONLY)&&!defined(BANNER)
+        v_texcoord0 = vec2(0.0, 0.0);
+        v_color0 = vec4(0.0, 0.0, 0.0, 0.0);
+    #else
+        highp vec2 uv = a_texcoord0;
+        #ifdef GLINT
+            v_layerUv.xy = calculateLayerUV(UVAnimation.x, UVAnimation.z);
+            v_layerUv.zw = calculateLayerUV(UVAnimation.y, UVAnimation.w);
+        #else
+            #ifdef ENTITY
+                v_layerUv = vec4(0.0, 0.0, 0.0, 0.0);
+            #endif
+            #if !(defined(TRANSPARENT)&&defined(BEACON_BEAM))
+                uv.xy = UVAnimation.xy + (uv.xy * UVAnimation.zw);
+            #endif
+        #endif
+        v_texcoord0 = uv;
+        v_color0 = a_color0;
+    #endif
+    #ifdef BANNER
+        #ifdef ALPHA_TEST
+            v_texcoords = vec4(0.0, 0.0, 0.0, 0.0);
+        #else
+
+        #endif
+    #endif
+    #if defined(TRANSPARENT)&&defined(BEACON_BEAM)
+        v_fog = vec4(0.0, 0.0, 0.0, 0.0);
+        v_light = vec4(0.0, 0.0, 0.0, 0.0);
+    #else
+        v_fog = fogColor;
+        v_light = light;
+    #endif
+    gl_Position = position;
+}
