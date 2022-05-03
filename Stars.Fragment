@@ -1,0 +1,8 @@
+varying highp vec4 v_color0;
+uniform highp vec4 StarsColor;
+void main() {
+    highp vec4 starColor;
+    starColor.w = v_color0.w;
+    starColor.xyz = v_color0.xyz * StarsColor.xyz * v_color0.w;
+    gl_FragColor = starColor;
+}
