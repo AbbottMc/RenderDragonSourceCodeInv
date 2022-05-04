@@ -26,8 +26,7 @@ void main() {
         emissive = float(pbrInfoArray.Load((pbrTextureId * 16u) + 10u).x);
         roughness = float(pbrInfoArray.Load((pbrTextureId * 16u) + 9u).x);
     } else {
-        vec4 merTex = s_MatTexture.Sample(
-            s_MatTextureSampler,
+        vec4 merTex = texture2D(s_MatTexture,
             float2(mad(v_texcoord0.x,
                        float(pbrInfoArray.Load(pbrTextureId * 16u).x),
                        float(pbrInfoArray.Load((pbrTextureId * 16u) + 2u).x)),
@@ -79,5 +78,5 @@ void main() {
 
     gl_FragData[6].xyz = viewDir;
     gl_FragData[6].w = float(((albedo.a * v_color0.a) < 0.8) ||
-                          ((metallic == 1.0f) && (roughness < 0.01)));
+                          ((metallic == 1.0f) && (roughness < 0.01))); //is specular
 }
