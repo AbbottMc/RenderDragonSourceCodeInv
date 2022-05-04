@@ -57,7 +57,7 @@ void main() {
     float camDis       = length(modelCamPos);
     vec3  viewDir      = normalize(-modelCamPos);
 
-    gl_FragData[0].xyz = sqrt(albedo.xyz);  // Fuck YOU NVIDIA gamma 2.0
+    gl_FragData[0].xyz = sqrt(albedo.xyz);  // FUCK YOU NVIDIA gamma 2.0
     gl_FragData[0].w   = metallic;
 
     gl_FragData[1].x   =
