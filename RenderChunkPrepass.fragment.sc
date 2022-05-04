@@ -6,8 +6,7 @@ SAMPLER2D(s_SeasonsTexture, 2);
 
 void main() {
     uint pbrTextureId = uint(v_pbrTextureId);
-    vec4 albedo = s_MatTexture.Sample(s_MatTextureSampler,
-                                      float2(v_texcoord0.x, v_texcoord0.y));
+    vec4 albedo =texture2D(s_MatTexture, v_texcoord0);
 
 #ifdef ALPHA_TEST
     if (albedo.a < 0.5) {
@@ -15,9 +14,8 @@ void main() {
     }
 #endif
 
-    vec4 vanillaLight = s_LightMapTexture.Sample(
-        s_LightMapTextureSampler,
-        min(BlockSkyAmbientContribution.xy * v_lightmapUV.xy, vec2(1.0, 1.0)));
+    vec4 vanillaLight = Texture2D(s_LightMapTexture,
+    min(BlockSkyAmbientContribution.xy * v_lightmapUV.xy, vec2(1.0, 1.0)));
     float emissive;
     float metallic;
     float roughness;
@@ -49,16 +47,20 @@ void main() {
     vec3 modelCamPos = (ViewPositionAndTime.xyz - v_worldPos.xyz);
     float camDis = length(modelCamPos);
     vec3 viewDir = normalize(-modelCamPos);
-    gl_FragData[0].x = sqrt(albedo.xyz * v_color0.xyz);  // Fuck YOU NVIDIA gamma 2.0
+
+    gl_FragData[0].xyz = sqrt(albedo.xyz * v_color0.xyz);  // Fuck YOU NVIDIA gamma 2.0
     gl_FragData[0].w = metallic;
+
     gl_FragData[1].x =
         _212 ? (((_210 >= 0.0f) ? 1.0f : (-1.0f)) * (1.0f - abs(_211))) : _210;
     gl_FragData[1].y =
         _212 ? ((1.0f - abs(_210)) * ((_211 >= 0.0f) ? 1.0f : (-1.0f))) : _211;
     gl_FragData[1].zw = 0.0f;
+
     gl_FragData[2].xy = emissive;
     gl_FragData[2].z = dot(float3(0.299, 0.587, 0.114), float3(vanillaLight.xyz));
     gl_FragData[2].w = roughness;
+
     gl_FragData[3].x =
         float(((((uint(int(mad(normal.y, 0.5f, 0.5f) * 1023.0f)) << 18u) &
                  268173312u) ^
@@ -68,12 +70,14 @@ void main() {
               uint(int(dot(float3(normal.x, normal.y, normal.z),
                            float3(v_worldPos.x, v_worldPos.y, v_worldPos.z)))));
     gl_FragData[3].yzw = 0.0f;
+
     gl_FragData[4].xyz = v_worldPos.xyz;
     gl_FragData[4].w = camDis;
+
     gl_FragData[5].xyz = v_worldPos.xyz;
     gl_FragData[5].w = camDis;
-    gl_FragData[6].xyz = viewDir;
-    gl_FragData[6].w = float(((_96 * v_color0.w) < 0.8) ||
-                          ((metallic == 1.0f) && (roughness < 0.01)));
 
+    gl_FragData[6].xyz = viewDir;
+    gl_FragData[6].w = float(((albedo.a * v_color0.a) < 0.8) ||
+                          ((metallic == 1.0f) && (roughness < 0.01)));
 }
