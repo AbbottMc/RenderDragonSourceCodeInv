@@ -35,7 +35,7 @@ void main() {
 #endif
 
     vec3 modelCamPos = (ViewPositionAndTime.xyz - worldPos);
-    float camDis = sqrt(dot(modelCamPos, modelCamPos));
+    float camDis = length(modelCamPos);
     vec4 fogColor;
     fogColor.rgb = FogColor.rgb;
     fogColor.a = clamp(((((camDis / FogAndDistanceControl.z) + RenderChunkFogAlpha.x) -
