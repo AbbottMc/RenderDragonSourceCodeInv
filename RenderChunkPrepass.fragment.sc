@@ -31,8 +31,7 @@ void main() {
     float emissive;
     float metallic;
     float roughness;
-    if ((pbrInfoArray.Load((pbrTextureId * 16u) + 8u).x & 1u) ==
-        0u)  // don't have mer tex
+    if ((pbrInfoArray.Load((pbrTextureId * 16u) + 8u).x & 1u) ==0u)// don't have mer tex
     {
         metallic  = float(pbrInfoArray.Load((pbrTextureId * 16u) + 11u).x);
         emissive  = float(pbrInfoArray.Load((pbrTextureId * 16u) + 10u).x);
@@ -49,11 +48,11 @@ void main() {
         emissive  = merTex.y;
         roughness = merTex.z;
     }
-    vec3 normal = normalize(v_normal.xyz);
-    float rNormalManhattanLength = 1.0f / (abs(normal.x) + abs(normal.y) + abs(normal.z));
-    float _210 = rNormalManhattanLength * normal.x;
-    float _211 = rNormalManhattanLength * normal.y;
-    bool isHeightMap = normal.z < 0.0;
+    vec3 GNormal = normalize(v_normal.xyz);
+    float rGNormalManhattanLength = 1.0f / (abs(GNormal.x) + abs(GNormal.y) + abs(GNormal.z));
+    float NX = rGNormalManhattanLength * GNormal.x;
+    float NY = rGNormalManhattanLength * GNormal.y;
+    bool isDownFace = GNormal.z < 0.0;
     vec3 modelCamPos = (ViewPositionAndTime.xyz - v_worldPos.xyz);
     float camDis = length(modelCamPos);
     vec3 viewDir = normalize(-modelCamPos);
@@ -62,9 +61,9 @@ void main() {
     gl_FragData[0].w = metallic;
 
     gl_FragData[1].x =
-        isHeightMap ? (((_210 >= 0.0f) ? 1.0f : (-1.0f)) * (1.0f - abs(_211))) : _210;
+        isDownFace ? ((1.0f - abs(NY)) * ((NX >= 0.0f) ? 1.0f : (-1.0f))) : NX;
     gl_FragData[1].y =
-        isHeightMap ? ((1.0f - abs(_210)) * ((_211 >= 0.0f) ? 1.0f : (-1.0f))) : _211;
+        isDownFace ? ((1.0f - abs(NX)) * ((NY >= 0.0f) ? 1.0f : (-1.0f))) : NY;
     gl_FragData[1].zw = 0.0f;
 
     gl_FragData[2].xy = emissive;
@@ -72,12 +71,12 @@ void main() {
     gl_FragData[2].w = roughness;
 
     gl_FragData[3].x =
-        uintBitsToFloat(((((floatBitsToUint(mad(normal.y, 0.5f, 0.5f) * 1023.0f) << 18u) &
+        uintBitsToFloat(((((floatBitsToUint(mad(GNormal.y, 0.5f, 0.5f) * 1023.0f) << 18u) &
                  268173312u) ^
-                (floatBitsToUint(mad(normal.x, 0.5f, 0.5f) * 1023.0f) << 22u)) ^
-               ((floatBitsToUint(mad(normal.z, 0.5f, 0.5f) * 1023.0f) << 14u) &
+                (floatBitsToUint(mad(GNormal.x, 0.5f, 0.5f) * 1023.0f) << 22u)) ^
+               ((floatBitsToUint(mad(GNormal.z, 0.5f, 0.5f) * 1023.0f) << 14u) &
                 16760832u)) +
-              floatBitsToUint(dot(vec3(normal.x, normal.y, normal.z),
+              floatBitsToUint(dot(vec3(GNormal.x, GNormal.y, GNormal.z),
                            vec3(v_worldPos.x, v_worldPos.y, v_worldPos.z))));
     gl_FragData[3].yzw = 0.0f;
 
