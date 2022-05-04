@@ -7,6 +7,9 @@ SAMPLER2D(s_MatTexture,      0);
 SAMPLER2D(s_LightMapTexture, 1);
 SAMPLER2D(s_SeasonsTexture,  2);
 
+uniform vec4 BlockSkyAmbientContribution;
+uniform vec4 ViewPositionAndTime;
+
 void main() {
     uint pbrTextureId = uint(v_pbrTextureId);
     vec4 albedo =texture2D(s_MatTexture, v_texcoord0);
@@ -57,7 +60,7 @@ void main() {
     float camDis       = length(modelCamPos);
     vec3  viewDir      = normalize(-modelCamPos);
 
-    gl_FragData[0].xyz = sqrt(albedo.xyz);  // FUCK YOU NVIDIA gamma 2.0
+    gl_FragData[0].xyz = sqrt(albedo.xyz);  // Fuck YOU NVIDIA gamma 2.0
     gl_FragData[0].w   = metallic;
 
     gl_FragData[1].x   =
