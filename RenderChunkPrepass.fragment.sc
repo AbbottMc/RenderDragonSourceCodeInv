@@ -71,12 +71,12 @@ void main() {
     gl_FragData[2].w = roughness;
 
     gl_FragData[3].x =
-        uintBitsToFloat(((((floatBitsToUint(mad(GNormal.y, 0.5f, 0.5f) * 1023.0f) << 18u) &
+        uintBitsToFloat(((((uint(mad(GNormal.y, 0.5f, 0.5f) * 1023.0f) << 18u) &
                  268173312u) ^
-                (floatBitsToUint(mad(GNormal.x, 0.5f, 0.5f) * 1023.0f) << 22u)) ^
-               ((floatBitsToUint(mad(GNormal.z, 0.5f, 0.5f) * 1023.0f) << 14u) &
+                (uint(mad(GNormal.x, 0.5f, 0.5f) * 1023.0f) << 22u)) ^
+               ((uint(mad(GNormal.z, 0.5f, 0.5f) * 1023.0f) << 14u) &
                 16760832u)) +
-              floatBitsToUint(dot(vec3(GNormal.x, GNormal.y, GNormal.z),
+              uint(dot(vec3(GNormal.x, GNormal.y, GNormal.z),
                            vec3(v_worldPos.x, v_worldPos.y, v_worldPos.z))));
     gl_FragData[3].yzw = 0.0f;
 
