@@ -39,7 +39,7 @@ void main() {
         roughness = float(pbrInfoArray.Load((pbrTextureId * 16u) +  9u).x);
     } else {
         vec4 merTex = texture2D(s_MatTexture,
-            float2(mad(v_texcoord0.x,
+            vec2(mad(v_texcoord0.x,
                     float(pbrInfoArray.Load( pbrTextureId * 16u       ).x),
                     float(pbrInfoArray.Load((pbrTextureId * 16u) +  2u).x)),
                    mad(v_texcoord0.y,
@@ -68,7 +68,7 @@ void main() {
     gl_FragData[1].zw = 0.0f;
 
     gl_FragData[2].xy = emissive;
-    gl_FragData[2].z = dot(float3(0.299, 0.587, 0.114), float3(vanillaLight.xyz));
+    gl_FragData[2].z = dot(vec3(0.299, 0.587, 0.114), vec3(vanillaLight.xyz));
     gl_FragData[2].w = roughness;
 
     gl_FragData[3].x =
@@ -77,8 +77,8 @@ void main() {
                 (floatBitsToUint(mad(normal.x, 0.5f, 0.5f) * 1023.0f) << 22u)) ^
                ((floatBitsToUint(mad(normal.z, 0.5f, 0.5f) * 1023.0f) << 14u) &
                 16760832u)) +
-              floatBitsToUint(dot(float3(normal.x, normal.y, normal.z),
-                           float3(v_worldPos.x, v_worldPos.y, v_worldPos.z))));
+              floatBitsToUint(dot(vec3(normal.x, normal.y, normal.z),
+                           vec3(v_worldPos.x, v_worldPos.y, v_worldPos.z))));
     gl_FragData[3].yzw = 0.0f;
 
     gl_FragData[4].xyz = v_worldPos.xyz;
