@@ -33,16 +33,15 @@ void main() {
                    mad(v_texcoord0.y,
                        float(pbrInfoArray.Load((pbrTextureId * 16u) + 1u).x),
                        float(pbrInfoArray.Load((pbrTextureId * 16u) + 3u).x))));
-        // where is gamma  correction ???????
         metallic = merTex.x;
         emissive = merTex.y;
         roughness = merTex.z;
     }
     vec3 normal = normalize(v_normal.xyz);
-    float _209 = 1.0f / ((abs(normal.y) + abs(normal.x)) + abs(normal.z));
-    float _210 = _209 * normal.x;
-    float _211 = _209 * normal.y;
-    bool _212 = normal.z < 0.0f;
+    float rNormalManhattanLength = 1.0f / (abs(normal.x) + abs(normal.y) + abs(normal.z));
+    float _210 = rNormalManhattanLength * normal.x;
+    float _211 = rNormalManhattanLength * normal.y;
+    bool isHeightMap = normal.z < 0.0;
     vec3 modelCamPos = (ViewPositionAndTime.xyz - v_worldPos.xyz);
     float camDis = length(modelCamPos);
     vec3 viewDir = normalize(-modelCamPos);
@@ -51,9 +50,9 @@ void main() {
     gl_FragData[0].w = metallic;
 
     gl_FragData[1].x =
-        _212 ? (((_210 >= 0.0f) ? 1.0f : (-1.0f)) * (1.0f - abs(_211))) : _210;
+        isHeightMap ? (((_210 >= 0.0f) ? 1.0f : (-1.0f)) * (1.0f - abs(_211))) : _210;
     gl_FragData[1].y =
-        _212 ? ((1.0f - abs(_210)) * ((_211 >= 0.0f) ? 1.0f : (-1.0f))) : _211;
+        isHeightMap ? ((1.0f - abs(_210)) * ((_211 >= 0.0f) ? 1.0f : (-1.0f))) : _211;
     gl_FragData[1].zw = 0.0f;
 
     gl_FragData[2].xy = emissive;
