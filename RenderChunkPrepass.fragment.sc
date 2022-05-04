@@ -1,5 +1,8 @@
-Buffer<uint4> pbrInfoArray : register(t3, space0);
+$input v_color0, v_fog, v_normal, v_tangent, v_bitangent, v_texcoord0, v_lightmapUV, v_worldPos, v_pbrTextureId
 
+#include <bgfx_shader.sh>
+
+Buffer<uint4> pbrInfoArray : register(t3, space0);
 SAMPLER2D(s_MatTexture, 0);
 SAMPLER2D(s_LightMapTexture, 1);
 SAMPLER2D(s_SeasonsTexture, 2);
@@ -14,6 +17,15 @@ void main() {
     }
 #endif
 
+#ifdef SEASONS
+    albedo.rgb *=
+        mix(vec3(1.0, 1.0, 1.0),
+            texture2D(s_SeasonsTexture, v_color0.xy).rgb * 2.0, v_color0.b);
+    albedo.rgb *= v_color0.aaa;
+#else
+    albedo *= v_color0;
+#endif
+
     vec4 vanillaLight = Texture2D(s_LightMapTexture,
     min(BlockSkyAmbientContribution.xy * v_lightmapUV.xy, vec2(1.0, 1.0)));
     float emissive;
@@ -22,19 +34,19 @@ void main() {
     if ((pbrInfoArray.Load((pbrTextureId * 16u) + 8u).x & 1u) ==
         0u)  // don't have mer tex
     {
-        metallic = float(pbrInfoArray.Load((pbrTextureId * 16u) + 11u).x);
-        emissive = float(pbrInfoArray.Load((pbrTextureId * 16u) + 10u).x);
-        roughness = float(pbrInfoArray.Load((pbrTextureId * 16u) + 9u).x);
+        metallic  = float(pbrInfoArray.Load((pbrTextureId * 16u) + 11u).x);
+        emissive  = float(pbrInfoArray.Load((pbrTextureId * 16u) + 10u).x);
+        roughness = float(pbrInfoArray.Load((pbrTextureId * 16u) +  9u).x);
     } else {
         vec4 merTex = texture2D(s_MatTexture,
             float2(mad(v_texcoord0.x,
-                       float(pbrInfoArray.Load(pbrTextureId * 16u).x),
-                       float(pbrInfoArray.Load((pbrTextureId * 16u) + 2u).x)),
+                    float(pbrInfoArray.Load( pbrTextureId * 16u       ).x),
+                    float(pbrInfoArray.Load((pbrTextureId * 16u) +  2u).x)),
                    mad(v_texcoord0.y,
-                       float(pbrInfoArray.Load((pbrTextureId * 16u) + 1u).x),
-                       float(pbrInfoArray.Load((pbrTextureId * 16u) + 3u).x))));
-        metallic = merTex.x;
-        emissive = merTex.y;
+                    float(pbrInfoArray.Load((pbrTextureId * 16u) +  1u).x),
+                    float(pbrInfoArray.Load((pbrTextureId * 16u) +  3u).x))));
+        metallic  = merTex.x;
+        emissive  = merTex.y;
         roughness = merTex.z;
     }
     vec3 normal = normalize(v_normal.xyz);
@@ -46,7 +58,7 @@ void main() {
     float camDis = length(modelCamPos);
     vec3 viewDir = normalize(-modelCamPos);
 
-    gl_FragData[0].xyz = sqrt(albedo.xyz * v_color0.xyz);  // Fuck YOU NVIDIA gamma 2.0
+    gl_FragData[0].xyz = sqrt(albedo.xyz);  // Fuck YOU NVIDIA gamma 2.0
     gl_FragData[0].w = metallic;
 
     gl_FragData[1].x =
@@ -76,6 +88,9 @@ void main() {
     gl_FragData[5].w = camDis;
 
     gl_FragData[6].xyz = viewDir;
-    gl_FragData[6].w = float(((albedo.a * v_color0.a) < 0.8) ||
+    gl_FragData[6].w = float(
+        #ifndef SEASONS
+        (albedo.a < 0.8) ||
+        #endif
                           ((metallic == 1.0f) && (roughness < 0.01))); //is specular
 }
