@@ -1,8 +1,0 @@
-attribute highp vec3 a_position;
-attribute highp vec2 a_texcoord0;
-varying highp vec2 v_texcoord0;
-uniform highp mat4 u_modelViewProj;
-void main() {
-    v_texcoord0 = a_texcoord0;
-    gl_Position = u_modelViewProj * vec4(a_position, 1.0);
-}
