@@ -29,7 +29,7 @@ SAMPLER2D(s_LightMapTexture, 1);
 SAMPLER2D(s_SeasonsTexture, 2);
 
 void main() {
-    uint pbrTextureId = uint(v_pbrTextureId);
+    int pbrTextureId = v_pbrTextureId;
     vec4 albedo = texture2D(s_MatTexture, v_texcoord0);
 
 #ifdef ALPHA_TEST
@@ -52,11 +52,10 @@ void main() {
     float roughness;
     if ((PBRData.data[pbrTextureId].flags & 1) == 1) /*have mer texture*/ {
         vec3 merTex =
-            texture2D(s_MatTexture, vec2(fma(v_texcoord0.x, float(pbrInfoArray.Load(pbrTextureId * 16u).x),
-                                             float(pbrInfoArray.Load((pbrTextureId * 16u) + 2u).x)),
-                                         fma(v_texcoord0.y, float(pbrInfoArray.Load((pbrTextureId * 16u) + 1u).x),
-                                             float(pbrInfoArray.Load((pbrTextureId * 16u) + 3u).x))))
-                .xyz;
+            texture2D(s_MatTexture, fma(v_texcoord0, vec2(PBRData.data[pbrTextureId].colourToMaterialUvScale0,
+                                                          PBRData.data[pbrTextureId].colourToMaterialUvScale1), 
+                                                     vec2(PBRData.data[pbrTextureId].colourToMaterialUvBias0, 
+                                                          PBRData.data[pbrTextureId].colourToMaterialUvBias1))).xyz;
         metallic = merTex.x;
         emissive = merTex.y;
         roughness = merTex.z;

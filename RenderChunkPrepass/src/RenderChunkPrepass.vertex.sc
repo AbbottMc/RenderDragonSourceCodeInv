@@ -16,7 +16,7 @@ void main() {
 #ifdef INSTANCING
     model = mtxFromCols(i_data0, i_data1, i_data2, i_data3);
 #else
-    model = u_model[0]; 
+    model = u_model[0];
 #endif
     vec3 worldPos = mul(model, vec4(a_position, 1.0)).xyz;
     vec3 modelCamPos = (ViewPositionAndTime.xyz - worldPos);
@@ -28,12 +28,9 @@ void main() {
     v_tangent = a_tangent;
     v_bitangent = cross(a_normal.xyz, a_tangent.xyz);
     v_worldPos = worldPos;
-    v_pbrTextureId = int(uint(a_pbrTextureId) & 65535u);
+    v_pbrTextureId = a_pbrTextureId & 65535;
     v_fog.xyz = FogColor.xyz;
-    v_fog.w =
-        clamp(((RenderChunkFogAlpha.x - FogAndDistanceControl.x) +
-               (camDis / FogAndDistanceControl.z)) /
-                  (FogAndDistanceControl.y - FogAndDistanceControl.x),
-              0.0, 1.0);
+    v_fog.w = clamp(((RenderChunkFogAlpha.x - FogAndDistanceControl.x) + (camDis / FogAndDistanceControl.z)) /
+                        (FogAndDistanceControl.y - FogAndDistanceControl.x), 0.0, 1.0);
     gl_Position = mul(u_viewProj, vec4(worldPos, 1.0));
 }
