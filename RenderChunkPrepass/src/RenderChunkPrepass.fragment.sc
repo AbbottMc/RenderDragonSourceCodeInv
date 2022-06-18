@@ -1,7 +1,7 @@
 $input v_color0, v_fog, v_normal, v_tangent, v_bitangent, v_texcoord0, v_lightmapUV, v_worldPos, v_pbrTextureId
 #include <bgfx_shader.sh>
 
-    struct PBRTextureData {
+struct PBRTextureData {
     highp float colourToMaterialUvScale0;
     highp float colourToMaterialUvScale1;
     highp float colourToMaterialUvBias0;
@@ -22,8 +22,7 @@ $input v_color0, v_fog, v_normal, v_tangent, v_bitangent, v_texcoord0, v_lightma
 
 layout(binding = 67, std430) readonly buffer s_PBRData {
     PBRTextureData data[];
-}
-PBRData;
+} PBRData;
 
 SAMPLER2D(s_MatTexture, 0);
 SAMPLER2D(s_LightMapTexture, 1);
