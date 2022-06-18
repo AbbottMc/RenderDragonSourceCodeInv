@@ -30,6 +30,7 @@ SAMPLER2D(s_SeasonsTexture, 2);
 
 void main() {
     int pbrTextureId = v_pbrTextureId;
+    vec3 worldPos = v_worldPos.xyz;
     vec4 albedo = texture2D(s_MatTexture, v_texcoord0);
 
 #ifdef ALPHA_TEST
@@ -69,7 +70,7 @@ void main() {
     float NX = rGNormalManhattanLength * GNormal.x;
     float NY = rGNormalManhattanLength * GNormal.y;
     bool isDownFace = GNormal.z < 0.0;
-    vec3 modelCamPos = (ViewPositionAndTime.xyz - v_worldPos.xyz);
+    vec3 modelCamPos = (ViewPositionAndTime.xyz - worldPos);
     float camDis = length(modelCamPos);
     vec3 viewDir = normalize(-modelCamPos);
 
@@ -87,14 +88,14 @@ void main() {
     gl_FragData[2].w = roughness;
 
     gl_FragData[3].x = intBitsToFloat((((0 ^ (intGNormal.x << 22)) ^ (intGNormal.y << 18)) ^ (intGNormal.z << 14)) +
-                                      int(dot(GNormal, v_worldPos.xyz)));
+                                      int(dot(GNormal, worldPos)));
 
     gl_FragData[3].yzw = 0.0f;
 
-    gl_FragData[4].xyz = v_worldPos.xyz;
+    gl_FragData[4].xyz = worldPos;
     gl_FragData[4].w = camDis;
 
-    gl_FragData[5].xyz = v_worldPos.xyz;
+    gl_FragData[5].xyz = worldPos;
     gl_FragData[5].w = camDis;
 
     gl_FragData[6].xyz = viewDir;
